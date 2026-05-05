@@ -1,0 +1,12 @@
+name: boilerplate-prod
+
+services:
+  boilerplate-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    restart: always
+    env_file:
+      - ./.env
+    ports:
+      - 5050:5050

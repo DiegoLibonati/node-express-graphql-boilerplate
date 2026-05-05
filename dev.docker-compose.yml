@@ -1,0 +1,15 @@
+name: boilerplate-dev
+
+services:
+  boilerplate-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.development
+    restart: always
+    env_file:
+      - ./.env
+    volumes:
+      - ".:/home/app"
+      - /home/app/node_modules
+    ports:
+      - "5050:5050"
