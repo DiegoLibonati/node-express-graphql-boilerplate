@@ -6,18 +6,6 @@ This project was created primarily for **educational and learning purposes**.
 While it is well-structured and could technically be used in production, it is **not intended for commercialization**.  
 The main goal is to explore and demonstrate best practices, patterns, and technologies in software development.
 
-## Getting Started
-
-> **Requirements:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) must be installed.
-
-1. Clone the repository
-2. Navigate to the project folder
-3. Copy the environment file and fill in the values.
-4. Build the Docker image: `docker-compose -f dev.docker-compose.yml build --no-cache`
-5. Start the container: `docker-compose -f dev.docker-compose.yml up --force-recreate`
-
-The API will be available at `http://localhost:5050/graphql`.
-
 ## Description
 
 **Node Ts Express GraphQL Boilerplate** is a production-ready starting point for building GraphQL APIs with Node.js, Express, and TypeScript. It is not a framework or a library — it is the foundation you clone once and stop rebuilding from scratch on every new backend project.
@@ -38,11 +26,7 @@ The API will be available at `http://localhost:5050/graphql`.
 - **Jest + Supertest** — test suite configured with `ts-jest`, covering schemas, resolvers, middlewares, helpers, and configs, with path alias mapping so tests import from `@/` just like source files.
 - **ESLint + Prettier + Husky + lint-staged** — pre-commit hooks block commits with linting errors and auto-format staged files. No manual formatting steps required.
 
-**How to use it:**
-
-1. Clone the repository and fill in your `.env` from `.env.example`.
-2. Start the stack with Docker Compose.
-3. Replace the `User` schema, types, and resolvers with your own domain logic — the folder structure, middleware setup, error handling, and tooling stay exactly as they are.
+**How to use it:** clone the repo, fill in your `.env`, start the stack with Docker Compose, and replace the `User` schema, types, and resolvers with your own domain logic. The folder structure, middleware setup, error handling, and tooling stay exactly as they are. Setup steps are detailed in [Getting Started](#getting-started).
 
 ## Technologies Used
 
@@ -87,67 +71,84 @@ The API will be available at `http://localhost:5050/graphql`.
 "typescript-eslint": "^8.0.0"
 ```
 
-## Available Scripts
+## Getting Started
 
-| Command                 | Description                      |
-| ----------------------- | -------------------------------- |
-| `npm run dev`           | Start development server         |
-| `npm run build`         | Build for production             |
-| `npm run start`         | Start production server          |
-| `npm run type-check`    | Run TypeScript type checking     |
-| `npm run test`          | Run tests                        |
-| `npm run test:watch`    | Run tests in watch mode          |
-| `npm run test:coverage` | Run tests with coverage          |
-| `npm run lint`          | Check for linting errors         |
-| `npm run lint:fix`      | Fix linting errors               |
-| `npm run lint:all`      | Fix linting errors (src + tests) |
-| `npm run format`        | Format code with Prettier        |
-| `npm run format:check`  | Check code formatting            |
-| `npm run format:all`    | Format code (src + tests)        |
+> **Requirements:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) must be installed.
 
-## Portfolio Link
+1. Clone the repository.
+2. Navigate to the project folder.
+3. Copy the environment template and fill in the values:
+   ```bash
+   cp .env.example .env
+   ```
+   See [Env Keys](#env-keys) for the full reference.
+4. Build the Docker image:
+   ```bash
+   docker-compose -f dev.docker-compose.yml build --no-cache
+   ```
+5. Start the container:
+   ```bash
+   docker-compose -f dev.docker-compose.yml up --force-recreate
+   ```
 
-[`https://www.diegolibonati.com.ar/#/project/node-ts-express-graphql-boilerplate`](https://www.diegolibonati.com.ar/#/project/node-ts-express-graphql-boilerplate)
+The API will be available at `http://localhost:5050/graphql` and the GraphiQL playground at `http://localhost:5050/graphiql`.
 
-## Testing
-
-1. Navigate to the project folder
-2. Execute: `npm test`
-
-For coverage report:
+If you prefer to run the dev server outside Docker, use:
 
 ```bash
-npm run test:coverage
+npm install
+npm run dev
 ```
 
-## Production
+This boots the server with `tsx watch` for hot reload.
 
-The production setup uses a **multi-stage Docker build** to produce a lean, secure image:
+### Pre-Commit for Development
 
-1. **Builder stage** — installs all dependencies, compiles TypeScript (`npm run build`), resolves path aliases with `tsc-alias`, then prunes devDependencies.
-2. **Runner stage** — copies only `dist/`, `node_modules/` (prod-only), and `package.json` from the builder. Runs as a non-root user (`appuser`) for security.
+Code quality is enforced automatically through pre-commit hooks. Husky runs `lint-staged` on every commit, which:
 
-To build and start the production container:
+- Runs ESLint with auto-fix on staged `.ts` files.
+- Formats `.ts`, `.json`, and `.md` files with Prettier.
+- Blocks commits with linting errors.
 
-```bash
-docker-compose -f prod.docker-compose.yml build --no-cache
-docker-compose -f prod.docker-compose.yml up --force-recreate
-```
+Available manual commands:
 
-The API will be available at `http://localhost:5050/graphql`.
+| Command                | Description                      |
+| ---------------------- | -------------------------------- |
+| `npm run type-check`   | Run TypeScript type checking     |
+| `npm run lint`         | Check for linting errors         |
+| `npm run lint:fix`     | Fix linting errors               |
+| `npm run lint:all`     | Fix linting errors (src + tests) |
+| `npm run format`       | Format code with Prettier        |
+| `npm run format:check` | Check code formatting            |
+| `npm run format:all`   | Format code (src + tests)        |
 
-**Key differences from development:**
+**ESLint** is configured with TypeScript strict rules (`strictTypeChecked` + `stylisticTypeChecked`):
 
-|              | Development                                  | Production                         |
-| ------------ | -------------------------------------------- | ---------------------------------- |
-| Dockerfile   | `Dockerfile.development`                     | `Dockerfile.production`            |
-| Compose file | `dev.docker-compose.yml`                     | `prod.docker-compose.yml`          |
-| Source mount | Volume-mounted with hot-reload (`tsx watch`) | Compiled `dist/` — no source mount |
-| Dependencies | All (dev + prod)                             | Production only (devDeps pruned)   |
-| `NODE_ENV`   | `development`                                | `production`                       |
-| User         | root                                         | `appuser` (non-root)               |
+- Explicit return types required on all functions.
+- No `any` type allowed.
+- Consistent type imports enforced (`import type`).
+- Interfaces preferred over type aliases.
+- No unused variables (args prefixed with `_` are exempt).
+- `const` required — `var` is an error, `let` only when reassignment is needed.
+- `===` required — no loose equality.
+- `console` usage warns; `debugger` is an error.
+- Config files (`*.config.js`) opt out of type-checked rules (not included in any `tsconfig`).
+- Relaxed rules inside `__tests__/` to allow `any`, unsafe assertions, and `no-console`.
+
+**Prettier** applies the following style:
+
+- 2 spaces indentation.
+- Semicolons required.
+- Double quotes.
+- Trailing commas (all).
+- Arrow function parentheses always included.
+- Bracket spacing enabled.
+- Max line width: 100 characters.
+- LF line endings.
 
 ## Env Keys
+
+The app reads environment variables at startup and composes them into a typed `Envs` object. Missing required variables crash the process with a clear message.
 
 | Key                   | Description                                                            |
 | --------------------- | ---------------------------------------------------------------------- |
@@ -157,6 +158,8 @@ The API will be available at `http://localhost:5050/graphql`.
 | `API_URL`             | Base URL of the external REST API the resolvers fetch from.            |
 | `CHOKIDAR_USEPOLLING` | Enable polling for file watching (`true`/`false`). Required on Docker. |
 | `CHOKIDAR_INTERVAL`   | Polling interval in milliseconds (e.g. `100`).                         |
+
+Example `.env`:
 
 ```bash
 # Server
@@ -259,6 +262,8 @@ node-ts-express-graphql-boilerplate/
 
 ## Architecture & Design Patterns
 
+The folder layout above maps directly to the layered design described here.
+
 ### Layered Architecture
 
 The project is organized into discrete layers, each with a single responsibility:
@@ -317,71 +322,112 @@ All unhandled errors flow to `errorHandler` and all unmatched routes to `notFoun
 
 `server.ts` registers `SIGTERM` and `SIGINT` handlers. On signal, the HTTP server stops accepting new connections and drains in-flight requests. A 10-second hard timeout forces exit if draining stalls, preventing zombie containers.
 
----
+## Testing
 
-### Multi-Stage Docker Build
+The project uses Jest with `ts-jest` and Supertest. Tests mirror the `src/` structure under `__tests__/` and import from `@/` via the same path aliases as source files.
 
-The production image uses a two-stage build:
+| Command                 | Description             |
+| ----------------------- | ----------------------- |
+| `npm run test`          | Run the full test suite |
+| `npm run test:watch`    | Run tests in watch mode |
+| `npm run test:coverage` | Run tests with coverage |
 
-- **Builder** — full Node image, compiles TypeScript, resolves path aliases, prunes devDependencies.
-- **Runner** — minimal Alpine image, copies only `dist/`, `node_modules/` (prod-only), and `package.json`. Runs as a non-root user (`appuser`) for least-privilege security.
+Coverage covers schemas, types, resolvers, middlewares, helpers, and configs.
 
-This keeps the final image small and free of build tooling.
+## Security Audit
 
-## Code Quality Tools
-
-### ESLint
-
-Configured with TypeScript strict rules (`strictTypeChecked` + `stylisticTypeChecked`):
-
-- Explicit return types required on all functions
-- No `any` type allowed
-- Consistent type imports enforced (`import type`)
-- Interfaces preferred over type aliases
-- No unused variables (args prefixed with `_` are exempt)
-- `const` required — `var` is an error, `let` only when reassignment is needed
-- `===` required — no loose equality
-- `console` usage warns; `debugger` is an error
-- Config files (`*.config.js`) opt out of type-checked rules (not included in any `tsconfig`)
-- Relaxed rules inside `__tests__/` to allow `any`, unsafe assertions, and `no-console`
-
-### Prettier
-
-Automatic code formatting on save and on commit:
-
-- 2 spaces indentation
-- Semicolons required
-- Double quotes
-- Trailing commas (all)
-- Arrow function parentheses always included
-- Bracket spacing enabled
-- Max line width: 100 characters
-- LF line endings
-
-### Husky + lint-staged
-
-Pre-commit hooks that automatically:
-
-- Run ESLint with auto-fix on staged `.ts` files
-- Format `.ts`, `.json`, and `.md` files with Prettier
-- Block commits with linting errors
-
-## Security
-
-### npm audit
-
-Check for vulnerabilities in dependencies:
+Before promoting a build, check the dependency tree for known vulnerabilities:
 
 ```bash
 npm audit
 ```
 
-Fix vulnerabilities automatically (when a safe upgrade exists):
+Apply the available safe upgrades automatically:
 
 ```bash
 npm audit fix
 ```
 
+Resolve any remaining advisories manually before continuing to [Build](#build).
+
+## Build
+
+Once tests and the security audit pass, produce a compiled artifact:
+
+```bash
+npm run build
+```
+
+This compiles TypeScript into `dist/` and runs `tsc-alias` so path aliases (`@/`) are rewritten as relative imports, making the output runnable directly by Node without a custom loader.
+
+To run the compiled server locally (outside Docker):
+
+```bash
+npm run start
+```
+
+The resulting `dist/` is what the production Docker image consumes — no build steps are repeated at runtime.
+
+## Production
+
+Production deploys assume the previous pipeline steps have already passed:
+
+1. [Testing](#testing) is green.
+2. [Security Audit](#security-audit) shows no unresolved advisories.
+3. [Build](#build) succeeds locally (or inside the Docker builder stage).
+
+What this section adds is **how to package and ship that build**: configuring a production `.env`, running the multi-stage Docker image, and distributing the container.
+
+### Configure the production environment
+
+Copy `.env.example` to `.env` and adjust the values for production:
+
+```bash
+cp .env.example .env
+```
+
+At minimum, set:
+
+```bash
+NODE_ENV=production
+PORT=5050
+BASE_URL=https://your-domain.example
+API_URL=https://your-upstream-api.example
+```
+
+### Multi-stage Docker build
+
+The production image uses a two-stage build:
+
+- **Builder stage** — installs all dependencies, runs `npm run build` (see [Build](#build)), then prunes devDependencies.
+- **Runner stage** — copies only `dist/`, `node_modules/` (prod-only), and `package.json`. Runs as a non-root user (`appuser`) for least-privilege security.
+
+This keeps the final image small and free of build tooling.
+
+To build and start the production container:
+
+```bash
+docker-compose -f prod.docker-compose.yml build --no-cache
+docker-compose -f prod.docker-compose.yml up --force-recreate
+```
+
+The API will be available at `http://localhost:5050/graphql`.
+
+### Dev vs Production
+
+|              | Development                                  | Production                         |
+| ------------ | -------------------------------------------- | ---------------------------------- |
+| Dockerfile   | `Dockerfile.development`                     | `Dockerfile.production`            |
+| Compose file | `dev.docker-compose.yml`                     | `prod.docker-compose.yml`          |
+| Source mount | Volume-mounted with hot-reload (`tsx watch`) | Compiled `dist/` — no source mount |
+| Dependencies | All (dev + prod)                             | Production only (devDeps pruned)   |
+| `NODE_ENV`   | `development`                                | `production`                       |
+| User         | root                                         | `appuser` (non-root)               |
+
 ## Known Issues
 
 None at the moment.
+
+## Portfolio Link
+
+[`https://www.diegolibonati.com.ar/#/project/node-ts-express-graphql-boilerplate`](https://www.diegolibonati.com.ar/#/project/node-ts-express-graphql-boilerplate)
