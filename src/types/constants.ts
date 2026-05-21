@@ -1,4 +1,7 @@
-export type MessagesSuccess = object;
+export interface MessagesSuccess {
+  healthLive: string;
+  healthReady: string;
+}
 
 export interface MessagesNot {
   foundRoute: string;
@@ -6,9 +9,13 @@ export interface MessagesNot {
 
 export interface MessagesError {
   generic: string;
+  validation: string;
 }
 
-export type CodesSuccess = object;
+export interface CodesSuccess {
+  healthLive: "SUCCESS_HEALTH_LIVE";
+  healthReady: "SUCCESS_HEALTH_READY";
+}
 
 export interface CodesNot {
   foundRoute: "NOT_FOUND_ROUTE";
@@ -16,4 +23,5 @@ export interface CodesNot {
 
 export interface CodesError {
   generic: "ERROR_GENERIC";
+  validation: "ERROR_VALIDATION";
 }

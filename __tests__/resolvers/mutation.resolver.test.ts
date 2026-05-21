@@ -1,21 +1,27 @@
-import axios from "axios";
-
 import type { User } from "@/types/app";
 import type { CreateUserArgs } from "@/types/args";
 import type { CreateUserInput } from "@/types/inputs";
+
+import { httpClient } from "@/configs/http_client.config";
 
 import { MutationResolver } from "@/resolvers/mutation.resolver";
 
 import { mockUser } from "@tests/__mocks__/users.mock";
 
-const mockAxios = axios as jest.Mocked<typeof axios>;
+const mockHttp = httpClient as jest.Mocked<typeof httpClient>;
 
-jest.mock("axios");
-jest.mock("@/configs/env.config", () => ({
-  envs: { API_URL: "http://test-api" },
+jest.mock("@/configs/http_client.config", () => ({
+  httpClient: {
+    get: jest.fn(),
+    post: jest.fn(),
+  },
 }));
 
 describe("mutation.resolver", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe("createUser", () => {
     it("should call the API and return the created user", async () => {
       const input: CreateUserInput = {
@@ -24,13 +30,13 @@ describe("mutation.resolver", () => {
         email: "sincere@april.biz",
       };
       const args: CreateUserArgs = { input };
-      mockAxios.post.mockResolvedValue({ data: mockUser });
+      mockHttp.post.mockResolvedValue({ data: mockUser });
 
       const result: User = await MutationResolver.createUser(null, args);
 
       expect(result).toEqual(mockUser);
-      expect(mockAxios.post).toHaveBeenCalledWith("http://test-api/users", input);
-      expect(mockAxios.post).toHaveBeenCalledTimes(1);
+      expect(mockHttp.post).toHaveBeenCalledWith("/users", input);
+      expect(mockHttp.post).toHaveBeenCalledTimes(1);
     });
 
     it("should post to the correct endpoint", async () => {
@@ -42,11 +48,11 @@ describe("mutation.resolver", () => {
         website: "ana.dev",
       };
       const args: CreateUserArgs = { input };
-      mockAxios.post.mockResolvedValue({ data: mockUser });
+      mockHttp.post.mockResolvedValue({ data: mockUser });
 
       await MutationResolver.createUser(null, args);
 
-      expect(mockAxios.post).toHaveBeenCalledWith("http://test-api/users", input);
+      expect(mockHttp.post).toHaveBeenCalledWith("/users", input);
     });
 
     it("should propagate the error when the API call fails", async () => {
@@ -56,7 +62,7 @@ describe("mutation.resolver", () => {
         email: "ana@x.com",
       };
       const args: CreateUserArgs = { input };
-      mockAxios.post.mockRejectedValue(new Error("Server error"));
+      mockHttp.post.mockRejectedValue(new Error("Server error"));
 
       await expect(MutationResolver.createUser(null, args)).rejects.toThrow("Server error");
     });

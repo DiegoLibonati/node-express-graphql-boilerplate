@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "graphql.vscode-graphql",
+    "graphql.vscode-graphql-syntax",
+    "orta.vscode-jest",
+    "ms-azuretools.vscode-docker",
+    "editorconfig.editorconfig",
+    "mikestead.dotenv",
+    "christian-kohler.path-intellisense",
+    "usernamehw.errorlens"
+  ]
+}

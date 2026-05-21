@@ -4,7 +4,7 @@ WORKDIR /home/app
 
 ENV NODE_ENV=development
 
-COPY package*.json ./
+COPY package*.json .npmrc ./
 RUN npm ci
 
 COPY . .
