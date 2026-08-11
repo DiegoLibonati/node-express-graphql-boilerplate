@@ -20,6 +20,7 @@ The main goal is to explore and demonstrate best practices, patterns, and techno
 - **Versioned routes** — all HTTP surface lives under `/api/v1/...`, with a single composition point in `src/routes/index.ts` so new versions can be added without touching the app wiring.
 - **External API integration** — resolvers fetch data from an external REST API through a configured `httpClient` (Axios instance) with `API_URL` baseURL and `HTTP_TIMEOUT_MS` timeout. A `User` model with a nested `Company` type is included as a reference implementation.
 - **Zod-based environment validation** — variables are parsed and coerced with Zod at startup. The process crashes fast with a list of issues if any required variable is missing or malformed. `GRAPHIQL_ENABLED` and `GRAPHQL_INTROSPECTION` default off in production and on in dev/test.
+- **Cascading `.env` files** — before Zod validation, `src/configs/dotenv.config.ts` loads `.env.<mode>.local`, `.env.local`, `.env.<mode>` and `.env` (in that precedence order) without ever overriding real environment variables, so `npm run dev` / `npm start` work without Docker while the Docker `env_file` flow stays untouched. Under `NODE_ENV=test` only `.env.test.local` / `.env.test` are read.
 - **Security headers (helmet)** — sensible defaults are applied to every response (CSP, HSTS, X-Content-Type-Options, etc.), plus `x-powered-by` is disabled.
 - **Rate limiting (express-rate-limit)** — configurable window and max via `RATE_LIMIT_WINDOW_MS` and `RATE_LIMIT_MAX`. Setting `RATE_LIMIT_MAX=0` bypasses the limiter with a passthrough middleware.
 - **Structured logging (pino + pino-http)** — JSON logs in production, pretty-printed in development. Per-request logs include the request id propagated via the `x-request-id` header.
@@ -48,6 +49,7 @@ The main goal is to explore and demonstrate best practices, patterns, and techno
 
 ```
 "axios": "^1.7.9"
+"dotenv": "^17.4.2"
 "express": "^4.21.0"
 "express-rate-limit": "^8.5.2"
 "graphql": "^16.10.0"
@@ -113,7 +115,21 @@ npm install
 npm run dev
 ```
 
-This boots the server with `tsx watch` for hot reload.
+This boots the server with `tsx watch` for hot reload. No `--env-file` flag or wrapper is needed: `src/configs/dotenv.config.ts` reads the `.env` cascade before the Zod schema is evaluated, so the same `.env` you would feed to Docker works out of the box. The startup log includes an `envFiles` field listing which files were actually applied.
+
+### `.env` file cascade
+
+Environment sources are applied in this precedence order (highest wins):
+
+1. Real environment variables (`process.env`: Docker `env_file`, CI, shell exports).
+2. `.env.<NODE_ENV>.local`
+3. `.env.local`
+4. `.env.<NODE_ENV>`
+5. `.env`
+
+A key from a file is only applied if it is not already set, so the Docker flow — where Compose injects everything via `env_file` — behaves exactly as before. `NODE_ENV` itself is resolved from the process first, then from a `NODE_ENV` declared inside `.env.local` or `.env`, and defaults to `development`.
+
+**Test isolation:** when `NODE_ENV=test` (e.g. under Jest) only `.env.test.local` and `.env.test` are read. A local development `.env` can never change test results.
 
 ### Pre-Commit for Development
 
@@ -162,7 +178,7 @@ Available manual commands:
 
 ## Env Keys
 
-The app reads environment variables at startup and validates them with Zod, composing them into a typed `Envs` object. Missing or malformed variables crash the process with a list of issues.
+The app reads environment variables at startup and validates them with Zod, composing them into a typed `Envs` object. Missing or malformed variables crash the process with a list of issues. Values can come from the real environment (Docker `env_file`, CI, shell) or from the [`.env` file cascade](#env-file-cascade) — real environment variables always win.
 
 | Key                     | Type    | Default            | Description                                                                                |
 | ----------------------- | ------- | ------------------ | ------------------------------------------------------------------------------------------ |
@@ -224,6 +240,7 @@ node-ts-express-graphql-boilerplate/
 │   │   ├── envs.mock.ts                             # Shared env mock values
 │   │   └── users.mock.ts                            # Shared mock User object
 │   ├── configs/
+│   │   ├── dotenv.config.test.ts
 │   │   ├── env.config.test.ts
 │   │   ├── http_client.config.test.ts
 │   │   └── logger.config.test.ts
@@ -255,6 +272,7 @@ node-ts-express-graphql-boilerplate/
 │   └── jest.setup.ts                                # Post-framework setup (setupFilesAfterEnv)
 ├── src/
 │   ├── configs/
+│   │   ├── dotenv.config.ts                         # Cascading .env file loader (never overrides process.env)
 │   │   ├── env.config.ts                            # Zod-validated environment composition
 │   │   ├── http_client.config.ts                    # Axios instance with API_URL + timeout
 │   │   └── logger.config.ts                         # Pino logger (pretty in dev, JSON in prod)
@@ -397,7 +415,7 @@ Resolvers do not own a database. They delegate all data operations to an externa
 
 ### Fail-Fast Initialization
 
-`src/configs/env.config.ts` parses `process.env` with a Zod schema at module load. If any required variable is missing or malformed, the process throws synchronously with a list of issues. The server never starts in a partially-configured state.
+`src/configs/env.config.ts` parses `process.env` with a Zod schema at module load. Right before that, `src/configs/dotenv.config.ts` applies the `.env` file cascade (without overriding variables already present in the environment), so any entry point that imports the config — the server, Jest, one-off scripts — gets the same resolution. If any required variable is missing or malformed, the process throws synchronously with a list of issues. The server never starts in a partially-configured state.
 
 ---
 
@@ -439,7 +457,7 @@ The project uses Jest with `ts-jest` and Supertest. Tests mirror the `src/` stru
 | `npm run test:watch`    | Run tests in watch mode |
 | `npm run test:coverage` | Run tests with coverage |
 
-Coverage spans configs (env, http client, logger), constants, controllers, errors, helpers, middlewares (error handler, not found, rate limit, request id), resolvers, routes (Supertest integration), schemas, and the GraphQL types.
+Coverage spans configs (dotenv cascade, env, http client, logger), constants, controllers, errors, helpers, middlewares (error handler, not found, rate limit, request id), resolvers, routes (Supertest integration), schemas, and the GraphQL types.
 
 Two Jest hooks shape the test runtime:
 

@@ -1,6 +1,10 @@
 import { z } from "zod";
 
+import { loadEnvFiles } from "@/configs/dotenv.config";
+
 import type { Envs } from "@/types/env";
+
+export const loadedEnvFiles = loadEnvFiles();
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),

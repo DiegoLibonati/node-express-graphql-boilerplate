@@ -8,8 +8,8 @@ coverage/
 
 # Environment variables
 .env
-.env.development
-.env.production
+.env.*
+!.env.example
 
 # Uploads
 uploads/

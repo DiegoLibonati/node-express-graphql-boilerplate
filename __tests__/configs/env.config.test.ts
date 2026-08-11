@@ -1,5 +1,9 @@
 import type { Envs } from "@/types/env";
 
+jest.mock("@/configs/dotenv.config", () => ({
+  loadEnvFiles: (): string[] => [],
+}));
+
 describe("env.config", () => {
   let originalEnv: NodeJS.ProcessEnv;
 
@@ -13,7 +17,7 @@ describe("env.config", () => {
     process.env = originalEnv;
   });
 
-  const loadEnvs = (): { envs: Envs } => {
+  const loadEnvs = (): { envs: Envs; loadedEnvFiles: string[] } => {
     return jest.requireActual("@/configs/env.config");
   };
 
@@ -21,6 +25,12 @@ describe("env.config", () => {
     const { envs } = loadEnvs();
 
     expect(envs).toBeDefined();
+  });
+
+  it("should expose the list of applied env files", () => {
+    const { loadedEnvFiles } = loadEnvs();
+
+    expect(loadedEnvFiles).toEqual([]);
   });
 
   it("should default PORT to 5050 when PORT is not set", () => {
